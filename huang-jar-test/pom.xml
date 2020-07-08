@@ -15,7 +15,7 @@
         <pkg.name>huang-jar-test</pkg.name>
         <project.scope>provided</project.scope>
         <slf4j.version>1.7.9</slf4j.version>
-        <log4j.version>2.9.1</log4j.version>
+        <log4j.version>2.13.3</log4j.version>
         <hadoop.version>2.7.1</hadoop.version>
         <hadoop.scope>provided</hadoop.scope>
         <spark.version>2.4.5</spark.version>
