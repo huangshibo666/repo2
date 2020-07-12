@@ -85,7 +85,7 @@ public class WordCount {
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String line = StrUtils.replaceAllSpecial(value);
-            Set<String> toolids = Test.jsonParse(line);
+            Set<String> toolids = StrUtils.jsonParse(line);
             if (StrUtils.isNull(toolids)){
                 return;
             }
