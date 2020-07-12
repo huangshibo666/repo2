@@ -1,10 +1,11 @@
 package com.huang.demo.mr;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
 
 import com.huang.demo.common.Constants;
 import com.huang.demo.util.HdfsUtil;
+import com.huang.demo.util.StrUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -83,10 +84,13 @@ public class WordCount {
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-            String[] split = value.toString().split(" ");
-
-            for (String str : split) {
-                keyOut.set(str);
+            String line = StrUtils.replaceAllSpecial(value);
+            Set<String> toolids = Test.jsonParse(line);
+            if (StrUtils.isNull(toolids)){
+                return;
+            }
+            for (String toolid : toolids) {
+                keyOut.set(toolid);
                 context.write(keyOut, valueOut);
             }
         }
@@ -96,16 +100,38 @@ public class WordCount {
     public static class TokenizerReducer extends Reducer<Text, LongWritable, Text, LongWritable> {
 
         LongWritable outValue = new LongWritable();
+        Text outKey = new Text();
+        Map<String, Long> map = new HashMap<>();
 
         @Override
-        protected void reduce(Text keyIn, Iterable<LongWritable> valueIn, Context context)
-                throws IOException, InterruptedException {
+        protected void reduce(Text keyIn, Iterable<LongWritable> valueIn, Context context) {
             long sum = 0L;
             for (LongWritable num : valueIn) {
                 sum += num.get();
             }
-            outValue.set(sum);
-            context.write(keyIn, outValue);
+            map.put(keyIn.toString(), sum);
+//            outValue.set(sum);
+//            context.write(keyIn, outValue);
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            List<Map.Entry<String, Long>> entryList = new ArrayList<>(map.entrySet());
+            Collections.sort(entryList, new MapValueComparator());
+            for (Map.Entry<String, Long> entry : entryList) {
+                outKey.set(entry.getKey());
+                outValue.set(entry.getValue());
+                context.write(outKey, outValue);
+            }
         }
     }
+
+    private static class MapValueComparator implements Comparator<Map.Entry<String, Long>> {
+        @Override
+        public int compare(Map.Entry<String, Long> me1, Map.Entry<String, Long> me2) {
+            //按照从大到小的顺序排列，如果想正序 调换me1 me2的位置
+            return me2.getValue().compareTo(me1.getValue());
+        }
+    }
+
 }
